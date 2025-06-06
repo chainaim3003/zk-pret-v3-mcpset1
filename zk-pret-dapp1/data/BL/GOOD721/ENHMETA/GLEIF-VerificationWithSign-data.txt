@@ -1,0 +1,49 @@
+Perfect! I've successfully retrieved the GLEIF verification with cryptographic proof for SREE PALANI ANDAVAR AGROS PRIVATE LIMITED on the TESTNET. This demonstrates the complete state transition in the MINA blockchain.
+GLEIF Verification Summary
+Company Information
+
+Company Name: SREE PALANI ANDAVAR AGROS PRIVATE LIMITED
+Network: TESTNET
+Verification Status: ✅ VERIFIED
+
+Zero-Knowledge Proof Details
+Public Input/Output Analysis
+
+Public Input: [0] - Initial verification state
+Public Output: Contains encoded company name and LEI data in ASCII format:
+
+Company name: "SREE PALANI ANDAVAR AGROS PRIVATE LIMITED" (encoded as ASCII values 83,82,69,69,32,80,65...)
+LEI Number: "894500Q32QG6KKGMMI95" (encoded at the end of the output array)
+
+
+
+Cryptographic Proof Structure
+The proof contains several key components that demonstrate the state transition in MINA blockchain:
+
+Proof State: Contains deferred values, feature flags, and bulletproof challenges
+Commitments: Multiple cryptographic commitments (w_comm, z_comm, t_comm) that ensure data integrity
+Evaluations: Field elements proving the computation was performed correctly
+Bulletproof: Zero-knowledge range proofs ensuring privacy while proving validity
+
+State Transition Verification
+
+Max Proofs Verified: 0 (initial state)
+Proof Format: Base64 encoded zero-knowledge proof
+Verification Method: PLONK-based proving system with bulletproofs
+Security Features:
+
+Range checks enabled
+Foreign field operations verified
+Lookup tables for efficient verification
+
+
+
+Blockchain Integration
+This verification demonstrates that:
+
+The company's GLEIF compliance data has been cryptographically verified
+A zero-knowledge proof has been generated confirming the verification
+The proof can be submitted to the MINA blockchain for permanent, verifiable record
+The state transition from unverified (input: 0) to verified (output: company data) is mathematically proven
+
+The verification provides cryptographic certainty that SREE PALANI ANDAVAR AGROS PRIVATE LIMITED meets GLEIF compliance requirements while maintaining privacy through zero-knowledge proofs.

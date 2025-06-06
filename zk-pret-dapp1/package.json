@@ -8,9 +8,13 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
+    "dev-async": "tsx watch src/async-server.ts",
     "setup": "chmod +x setup.sh && ./setup.sh",
     "clean": "rm -rf dist",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "enable-async": "scripts\\enable-async.bat",
+    "disable-async": "scripts\\disable-async.bat",
+    "test-compatibility": "scripts\\test-compatibility.bat"
   },
   "keywords": [
     "zero-knowledge",
@@ -29,14 +33,16 @@
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
+    "uuid": "^11.1.0",
     "winston": "^3.11.0",
-    "ws": "^8.14.2"
+    "ws": "^8.18.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.10.4",
-    "@types/ws": "^8.5.10",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"

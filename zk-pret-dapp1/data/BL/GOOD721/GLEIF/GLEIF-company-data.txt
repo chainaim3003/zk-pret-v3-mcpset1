@@ -1,0 +1,32 @@
+The GLEIF compliance data has been successfully retrieved for SREE PALANI ANDAVAR AGROS PRIVATE LIMITED on the TESTNET environment. Here are the key details:
+Company Information
+
+Legal Entity Identifier (LEI): 894500Q32QG6KKGMMI95
+Company Name: SREE PALANI ANDAVAR AGROS PRIVATE LIMITED
+Registration Number: U01112TZ2022PTC039493
+Status: ACTIVE
+Jurisdiction: India (IN)
+
+Address Details
+
+Location: Door No. 3/5-G, Sri Balaji Nagar, Theethipalayam, Perur (PO)
+City: Coimbatore
+Region: Tamil Nadu (IN-TN)
+Postal Code: 641010
+Country: India
+
+Registration Status
+
+LEI Status: ISSUED
+Registration Date: May 22, 2025
+Next Renewal Date: May 22, 2026
+Corroboration Level: FULLY_CORROBORATED
+Conformity Flag: CONFORMING
+
+Additional Identifiers
+
+OCID: in/U01112TZ2022PTC039493
+QCC: QINDAD21MX
+S&P Global ID: 1944713700
+
+The company is fully GLEIF compliant with an active LEI record that was recently registered and is valid until May 2026. The conformity flag shows "CONFORMING" status, indicating full compliance with GLEIF standards.

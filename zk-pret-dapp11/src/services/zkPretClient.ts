@@ -426,6 +426,44 @@ class ZKPretClient {
         console.log('Added EXIM arg 2 (network type): "TESTNET"');
         break;
         
+      case 'get-BSDI-compliance-verification':
+        // BSDI verification expects: [filePath] as the only argument
+        const filePath = parameters.filePath;
+        if (filePath) {
+          args.push(String(filePath));
+          console.log(`Added BSDI arg 1 (file path): "${filePath}"`);
+        } else {
+          console.log('⚠️  No file path found for BSDI verification');
+          args.push('default'); // Use default if no path provided
+          console.log('Added BSDI arg 1 (default): "default"');
+        }
+        break;
+        
+      case 'get-RiskLiquidityACTUS-Verifier-Test_adv_zk':
+      case 'get-RiskLiquidityACTUS-Verifier-Test_Basel3_Withsign':
+        // Risk & Liquidity verification expects: [threshold, actusUrl]
+        const threshold = parameters.threshold;
+        const actusUrl = parameters.actusUrl;
+        
+        if (threshold !== undefined) {
+          args.push(String(threshold));
+          console.log(`Added Risk arg 1 (threshold): "${threshold}"`);
+        } else {
+          console.log('⚠️  No threshold found for Risk verification');
+          args.push('0'); // Default threshold
+          console.log('Added Risk arg 1 (default threshold): "0"');
+        }
+        
+        if (actusUrl) {
+          args.push(String(actusUrl));
+          console.log(`Added Risk arg 2 (ACTUS URL): "${actusUrl}"`);
+        } else {
+          console.log('⚠️  No ACTUS URL found for Risk verification');
+          args.push('default-url'); // Default URL placeholder
+          console.log('Added Risk arg 2 (default URL): "default-url"');
+        }
+        break;
+        
       default:
         // For other verification types, use the original logic as fallback
         const fallbackCompanyName = parameters.legalName || parameters.entityName || parameters.companyName;

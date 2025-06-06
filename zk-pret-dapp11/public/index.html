@@ -86,6 +86,50 @@
         .results-container::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* File drop zone styling - matching original design aesthetic */
+        .file-drop-zone {
+            border: 2px dashed #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.2s;
+            background-color: #f8fafc;
+            cursor: pointer;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .file-drop-zone:hover {
+            border-color: var(--primary-color);
+            background-color: #eff6ff;
+        }
+        .file-drop-zone.dragover {
+            border-color: var(--primary-color);
+            background-color: #dbeafe;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+        .file-drop-zone.has-file {
+            border-color: var(--success-color);
+            background-color: #f0fdf4;
+        }
+        .file-info {
+            display: none;
+        }
+        .file-info.show {
+            display: block;
+        }
+        .file-remove-btn {
+            color: var(--error-color);
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .file-remove-btn:hover {
+            color: #dc2626;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -148,8 +192,11 @@
                 <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="exim">
                     <i class="fas fa-ship mr-2"></i>EXIM Verification
                 </button>
-                <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="compliance">
-                    <i class="fas fa-check-circle mr-2"></i>Business Compliance
+                <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="data-integrity">
+                    <i class="fas fa-database mr-2"></i>Business Data Integrity
+                </button>
+                <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="process-integrity">
+                    <i class="fas fa-sitemap mr-2"></i>Business Process Integrity
                 </button>
                 <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="risk">
                     <i class="fas fa-chart-line mr-2"></i>Risk & Liquidity
@@ -246,14 +293,199 @@
                         </div>
                     </div>
 
-                    <div id="compliance-tab" class="tab-content hidden p-6">
-                        <h3 class="text-lg font-semibold mb-4">Business Compliance Verification</h3>
-                        <p class="text-gray-600">Compliance verification tools will be available here.</p>
+                    <div id="data-integrity-tab" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-database mr-2 text-purple-600"></i>
+                            Business Data Integrity Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Data Input Method</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-3">
+                                    Choose how to provide the business data file for integrity verification
+                                </div>
+                                <div class="flex space-x-4 mb-4">
+                                    <label class="flex items-center">
+                                        <input type="radio" name="data-input-method" value="filepath" class="mr-2" checked>
+                                        <span class="text-sm font-medium">File Path</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="radio" name="data-input-method" value="upload" class="mr-2">
+                                        <span class="text-sm font-medium">Upload File</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- File Path Option -->
+                            <div id="data-filepath-section">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Data File Path</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Enter the path to the business data file (JSON/TXT format)
+                                </div>
+                                <input type="text" id="data-file-path-input" class="form-input" placeholder="Enter file path (e.g., /path/to/data.json) or leave blank for default">
+                            </div>
+
+                            <!-- File Upload Option -->
+                            <div id="data-upload-section" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Upload Data File</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Upload the actual business data file (JSON format) for integrity verification
+                                </div>
+                                <div class="file-drop-zone" id="data-file-drop-zone">
+                                    <input type="file" id="data-file-input" class="hidden" accept=".json,.txt">
+                                    <div class="file-placeholder">
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-gray-600">Drag & drop your data file here</p>
+                                        <p class="text-sm text-gray-500">or click to browse</p>
+                                        <p class="text-xs text-gray-400 mt-1">Supports: JSON, TXT files</p>
+                                    </div>
+                                    <div class="file-info">
+                                        <i class="fas fa-file-alt text-green-600 text-2xl mb-2"></i>
+                                        <p class="font-medium text-gray-800" id="data-file-name"></p>
+                                        <p class="text-sm text-gray-500" id="data-file-size"></p>
+                                        <button type="button" class="file-remove-btn hover:underline mt-1" onclick="clearDataFile()">
+                                            <i class="fas fa-times mr-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button id="data-integrity-execute-btn" class="btn btn-primary w-full">
+                                <i class="fas fa-play mr-2"></i>
+                                Generate Business Data Integrity ZK Proof
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="process-integrity-tab" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-sitemap mr-2 text-indigo-600"></i>
+                            Business Process Integrity Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Business Process Type</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Select the type of business process to verify
+                                </div>
+                                <select id="process-type-select" class="form-input">
+                                    <option value="SCF">Supply Chain Finance (SCF)</option>
+                                    <option value="DVP">Delivery vs Payment (DVP)</option>
+                                    <option value="STABLECOIN">Stablecoin Operations</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Actual Process File</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Upload the actual business process execution file (BPMN format)
+                                </div>
+                                <div class="file-drop-zone" id="actual-process-drop-zone">
+                                    <input type="file" id="actual-process-input" class="hidden" accept=".bpmn,.xml,.json">
+                                    <div class="file-placeholder">
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-gray-600">Drag & drop actual process file here</p>
+                                        <p class="text-sm text-gray-500">or click to browse</p>
+                                        <p class="text-xs text-gray-400 mt-1">Supports: BPMN, XML, JSON files</p>
+                                    </div>
+                                    <div class="file-info">
+                                        <i class="fas fa-file-code text-green-600 text-2xl mb-2"></i>
+                                        <p class="font-medium text-gray-800" id="actual-process-file-name"></p>
+                                        <p class="text-sm text-gray-500" id="actual-process-file-size"></p>
+                                        <button type="button" class="file-remove-btn hover:underline mt-1" onclick="clearActualProcessFile()">
+                                            <i class="fas fa-times mr-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Expected Process File</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Upload the expected business process template file (BPMN format)
+                                </div>
+                                <div class="file-drop-zone" id="expected-process-drop-zone">
+                                    <input type="file" id="expected-process-input" class="hidden" accept=".bpmn,.xml,.json">
+                                    <div class="file-placeholder">
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-gray-600">Drag & drop expected process file here</p>
+                                        <p class="text-sm text-gray-500">or click to browse</p>
+                                        <p class="text-xs text-gray-400 mt-1">Supports: BPMN, XML, JSON files</p>
+                                    </div>
+                                    <div class="file-info">
+                                        <i class="fas fa-file-code text-green-600 text-2xl mb-2"></i>
+                                        <p class="font-medium text-gray-800" id="expected-process-file-name"></p>
+                                        <p class="text-sm text-gray-500" id="expected-process-file-size"></p>
+                                        <button type="button" class="file-remove-btn hover:underline mt-1" onclick="clearExpectedProcessFile()">
+                                            <i class="fas fa-times mr-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button id="process-integrity-execute-btn" class="btn btn-primary w-full">
+                                <i class="fas fa-play mr-2"></i>
+                                Generate Business Process Integrity ZK Proof
+                            </button>
+                        </div>
                     </div>
 
                     <div id="risk-tab" class="tab-content hidden p-6">
-                        <h3 class="text-lg font-semibold mb-4">Risk & Liquidity Assessment</h3>
-                        <p class="text-gray-600">Risk assessment tools will be available here.</p>
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-chart-line mr-2 text-red-600"></i>
+                            Risk & Liquidity Assessment
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Risk Assessment Type</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Select the type of risk assessment to perform
+                                </div>
+                                <select id="risk-type-select" class="form-input">
+                                    <option value="ACTUS_ADV">ACTUS Advanced Risk Model</option>
+                                    <option value="BASEL3">Basel III Compliance</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Threshold</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Enter the risk threshold value (up to 4 digits)
+                                </div>
+                                <input type="number" id="risk-threshold-input" class="form-input" placeholder="Enter threshold (e.g., 1000)" min="0" max="9999" step="1">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>ACTUS URL</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Enter the ACTUS service URL for risk assessment
+                                </div>
+                                <input type="url" id="risk-actus-url-input" class="form-input" placeholder="Enter ACTUS URL (e.g., https://actus-service.example.com/api)">
+                            </div>
+                            
+                            <button id="risk-execute-btn" class="btn btn-primary w-full">
+                                <i class="fas fa-play mr-2"></i>
+                                Generate Risk & Liquidity ZK Proof
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -326,11 +558,17 @@
                 this.jobs = new Map();
                 this.websocket = null;
                 this.syncExecuting = false;
+                this.uploadedFiles = {
+                    dataFile: null,
+                    actualProcessFile: null,
+                    expectedProcessFile: null
+                };
                 this.init();
             }
 
             async init() {
                 this.setupEventListeners();
+                this.setupFileDropZones();
                 this.initWebSocket();
                 await this.checkConnection();
                 this.updateModeDisplay();
@@ -356,25 +594,128 @@
                     );
                 });
 
-                // GLEIF execution
+                // Data input method radio buttons
+                document.querySelectorAll('input[name="data-input-method"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        this.toggleDataInputMethod(e.target.value);
+                    });
+                });
+
+                // Execution buttons
                 document.getElementById('gleif-execute-btn').addEventListener('click', () => {
                     this.executeGLEIF();
                 });
                 
-                // Corporate Registration execution
                 document.getElementById('corporate-execute-btn').addEventListener('click', () => {
                     this.executeCorporateRegistration();
                 });
                 
-                // EXIM execution
                 document.getElementById('exim-execute-btn').addEventListener('click', () => {
                     this.executeEXIM();
+                });
+
+                document.getElementById('data-integrity-execute-btn').addEventListener('click', () => {
+                    this.executeBusinessDataIntegrity();
+                });
+
+                document.getElementById('process-integrity-execute-btn').addEventListener('click', () => {
+                    this.executeBusinessProcessIntegrity();
+                });
+
+                document.getElementById('risk-execute-btn').addEventListener('click', () => {
+                    this.executeRiskLiquidity();
                 });
 
                 // Clear completed jobs
                 document.getElementById('clear-completed-jobs').addEventListener('click', () => {
                     this.clearCompletedJobs();
                 });
+            }
+
+            setupFileDropZones() {
+                this.setupDropZone('data-file-drop-zone', 'data-file-input', 'dataFile');
+                this.setupDropZone('actual-process-drop-zone', 'actual-process-input', 'actualProcessFile');
+                this.setupDropZone('expected-process-drop-zone', 'expected-process-input', 'expectedProcessFile');
+            }
+
+            setupDropZone(dropZoneId, inputId, fileKey) {
+                const dropZone = document.getElementById(dropZoneId);
+                const fileInput = document.getElementById(inputId);
+
+                // Click to browse
+                dropZone.addEventListener('click', () => {
+                    fileInput.click();
+                });
+
+                // File input change
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.handleFile(e.target.files[0], fileKey, dropZoneId);
+                    }
+                });
+
+                // Drag and drop events
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('dragover');
+                });
+
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    
+                    if (e.dataTransfer.files.length > 0) {
+                        this.handleFile(e.dataTransfer.files[0], fileKey, dropZoneId);
+                    }
+                });
+            }
+
+            handleFile(file, fileKey, dropZoneId) {
+                this.uploadedFiles[fileKey] = file;
+                const dropZone = document.getElementById(dropZoneId);
+                const placeholder = dropZone.querySelector('.file-placeholder');
+                const fileInfo = dropZone.querySelector('.file-info');
+                
+                // Update UI
+                placeholder.style.display = 'none';
+                fileInfo.classList.add('show');
+                dropZone.classList.add('has-file');
+                
+                // Update file info
+                const nameElement = fileInfo.querySelector('[id$="-file-name"]');
+                const sizeElement = fileInfo.querySelector('[id$="-file-size"]');
+                
+                if (nameElement) nameElement.textContent = file.name;
+                if (sizeElement) sizeElement.textContent = this.formatFileSize(file.size);
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            toggleDataInputMethod(method) {
+                const filePathSection = document.getElementById('data-filepath-section');
+                const uploadSection = document.getElementById('data-upload-section');
+                
+                if (method === 'filepath') {
+                    filePathSection.classList.remove('hidden');
+                    uploadSection.classList.add('hidden');
+                    // Clear uploaded file if switching to filepath
+                    this.clearDataFile();
+                } else {
+                    filePathSection.classList.add('hidden');
+                    uploadSection.classList.remove('hidden');
+                    // Clear file path if switching to upload
+                    document.getElementById('data-file-path-input').value = '';
+                }
             }
 
             switchTab(tabName) {
@@ -422,7 +763,6 @@
                     return;
                 }
 
-                // Use the same parameter format that worked before
                 const parameters = { 
                     companyName: companyName,
                     typeOfNet: 'TESTNET'
@@ -437,14 +777,12 @@
             
             async executeCorporateRegistration() {
                 const cin = document.getElementById('cin-input').value.trim();
-                const companyName = document.getElementById('corp-company-name-input').value.trim();
 
                 if (!cin) {
                     this.showNotification('Missing Information', 'Please enter the Corporate Identification Number (CIN)', 'error');
                     return;
                 }
 
-                // Use the same parameter format as the working data files
                 const parameters = { 
                     cin: cin,
                     typeOfNet: 'TESTNET'
@@ -459,14 +797,12 @@
             
             async executeEXIM() {
                 const companyName = document.getElementById('exim-company-name-input').value.trim();
-                const iec = document.getElementById('iec-input').value.trim();
 
                 if (!companyName) {
                     this.showNotification('Missing Information', 'Please enter the Company Name for EXIM verification', 'error');
                     return;
                 }
 
-                // Use the same parameter format as the working data files
                 const parameters = { 
                     companyName: companyName,
                     typeOfNet: 'TESTNET'
@@ -477,6 +813,114 @@
                 } else {
                     await this.executeSync('get-EXIM-verification-with-sign', parameters);
                 }
+            }
+
+            async executeBusinessDataIntegrity() {
+                const selectedMethod = document.querySelector('input[name="data-input-method"]:checked').value;
+                let filePath;
+
+                if (selectedMethod === 'filepath') {
+                    // File path method
+                    filePath = document.getElementById('data-file-path-input').value.trim();
+                    if (!filePath) {
+                        filePath = 'default'; // Use default if no path provided
+                    }
+                } else {
+                    // File upload method - we'll need to save the file and get its path
+                    if (!this.uploadedFiles.dataFile) {
+                        this.showNotification('Missing File', 'Please upload an actual data file', 'error');
+                        return;
+                    }
+                    // For uploaded files, we'll use the filename as the path
+                    // The backend should handle this appropriately
+                    filePath = this.uploadedFiles.dataFile.name;
+                }
+
+                // Pass the file path as the single parameter
+                const parameters = {
+                    filePath: filePath
+                };
+
+                if (this.isAsyncMode) {
+                    await this.executeAsync('get-BSDI-compliance-verification', parameters);
+                } else {
+                    await this.executeSync('get-BSDI-compliance-verification', parameters);
+                }
+            }
+
+            async executeBusinessProcessIntegrity() {
+                if (!this.uploadedFiles.actualProcessFile || !this.uploadedFiles.expectedProcessFile) {
+                    this.showNotification('Missing Files', 'Please upload both actual and expected process files', 'error');
+                    return;
+                }
+
+                const processType = document.getElementById('process-type-select').value;
+
+                const parameters = {
+                    actualProcessFile: this.uploadedFiles.actualProcessFile.name,
+                    expectedProcessFile: this.uploadedFiles.expectedProcessFile.name,
+                    actualFileContent: await this.readFileContent(this.uploadedFiles.actualProcessFile),
+                    expectedFileContent: await this.readFileContent(this.uploadedFiles.expectedProcessFile),
+                    businessProcessType: processType,
+                    typeOfNet: 'TESTNET'
+                };
+
+                if (this.isAsyncMode) {
+                    await this.executeAsync('get-BPI-compliance-verification', parameters);
+                } else {
+                    await this.executeSync('get-BPI-compliance-verification', parameters);
+                }
+            }
+
+            async executeRiskLiquidity() {
+                const riskType = document.getElementById('risk-type-select').value;
+                const threshold = document.getElementById('risk-threshold-input').value.trim();
+                const actusUrl = document.getElementById('risk-actus-url-input').value.trim();
+
+                // Validate required fields
+                if (!threshold) {
+                    this.showNotification('Missing Information', 'Please enter the threshold value', 'error');
+                    return;
+                }
+
+                if (!actusUrl) {
+                    this.showNotification('Missing Information', 'Please enter the ACTUS URL', 'error');
+                    return;
+                }
+
+                // Validate threshold is a number and within range
+                const thresholdNum = parseInt(threshold);
+                if (isNaN(thresholdNum) || thresholdNum < 0 || thresholdNum > 9999) {
+                    this.showNotification('Invalid Threshold', 'Threshold must be a number between 0 and 9999', 'error');
+                    return;
+                }
+
+                let toolName;
+                if (riskType === 'ACTUS_ADV') {
+                    toolName = 'get-RiskLiquidityACTUS-Verifier-Test_adv_zk';
+                } else {
+                    toolName = 'get-RiskLiquidityACTUS-Verifier-Test_Basel3_Withsign';
+                }
+
+                const parameters = {
+                    threshold: thresholdNum,
+                    actusUrl: actusUrl
+                };
+
+                if (this.isAsyncMode) {
+                    await this.executeAsync(toolName, parameters);
+                } else {
+                    await this.executeSync(toolName, parameters);
+                }
+            }
+
+            async readFileContent(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
             }
 
             async executeAsync(toolName, parameters) {
@@ -520,7 +964,7 @@
 
                     this.showNotification(
                         'Job Started',
-                        `${toolName.replace('get-', '').replace('-with-sign', '')} is now running in background`,
+                        `${toolName.replace('get-', '').replace('-with-sign', '').replace('-compliance-verification', '')} is now running in background`,
                         'info'
                     );
 
@@ -566,6 +1010,8 @@
                 }
             }
 
+            // [Continue with all other methods from the original implementation...]
+            
             initWebSocket() {
                 if (!this.isAsyncMode) return;
 
@@ -605,7 +1051,6 @@
                 if (data.status === 'completed' || data.status === 'failed') {
                     job.endTime = new Date();
                     
-                    // Display the result in the execution results panel
                     if (data.status === 'completed' && data.result) {
                         this.displayResult(data.result);
                     } else if (data.status === 'failed') {
@@ -614,7 +1059,7 @@
                     
                     this.showNotification(
                         data.status === 'completed' ? 'Job Completed' : 'Job Failed',
-                        `${job.toolName.replace('get-', '').replace('-with-sign', '')} ${data.status === 'completed' ? 'completed successfully' : 'failed'}`,
+                        `${job.toolName.replace('get-', '').replace('-with-sign', '').replace('-compliance-verification', '')} ${data.status === 'completed' ? 'completed successfully' : 'failed'}`,
                         data.status === 'completed' ? 'success' : 'error'
                     );
                 }
@@ -641,7 +1086,7 @@
                     <div class="job-item ${job.status === 'completed' || job.status === 'failed' ? 'completed' : ''} border-l-4 ${this.getJobBorderColor(job.status)} bg-gray-50 p-3 rounded-r transition-all">
                         <div class="flex items-center justify-between">
                             <div>
-                                <div class="font-medium text-sm text-gray-900">${job.toolName.replace('get-', '').replace('-with-sign', '')}</div>
+                                <div class="font-medium text-sm text-gray-900">${job.toolName.replace('get-', '').replace('-with-sign', '').replace('-compliance-verification', '')}</div>
                                 <div class="text-xs text-gray-500">${job.startTime.toLocaleTimeString()}</div>
                             </div>
                             <div class="flex items-center space-x-2">
@@ -818,6 +1263,48 @@
                 document.getElementById('notifications').appendChild(notification);
                 setTimeout(() => notification.remove(), 5000);
             }
+        }
+
+        // Global functions for file clearing
+        function clearDataFile() {
+            if (window.app) {
+                window.app.uploadedFiles.dataFile = null;
+            }
+            const dropZone = document.getElementById('data-file-drop-zone');
+            if (dropZone) {
+                const placeholder = dropZone.querySelector('.file-placeholder');
+                const fileInfo = dropZone.querySelector('.file-info');
+                
+                if (placeholder) placeholder.style.display = 'flex';
+                if (fileInfo) fileInfo.classList.remove('show');
+                dropZone.classList.remove('has-file');
+            }
+            const fileInput = document.getElementById('data-file-input');
+            if (fileInput) fileInput.value = '';
+        }
+
+        function clearActualProcessFile() {
+            window.app.uploadedFiles.actualProcessFile = null;
+            const dropZone = document.getElementById('actual-process-drop-zone');
+            const placeholder = dropZone.querySelector('.file-placeholder');
+            const fileInfo = dropZone.querySelector('.file-info');
+            
+            placeholder.style.display = 'flex';
+            fileInfo.classList.remove('show');
+            dropZone.classList.remove('has-file');
+            document.getElementById('actual-process-input').value = '';
+        }
+
+        function clearExpectedProcessFile() {
+            window.app.uploadedFiles.expectedProcessFile = null;
+            const dropZone = document.getElementById('expected-process-drop-zone');
+            const placeholder = dropZone.querySelector('.file-placeholder');
+            const fileInfo = dropZone.querySelector('.file-info');
+            
+            placeholder.style.display = 'flex';
+            fileInfo.classList.remove('show');
+            dropZone.classList.remove('has-file');
+            document.getElementById('expected-process-input').value = '';
         }
 
         document.addEventListener('DOMContentLoaded', () => {

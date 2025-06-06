@@ -1,0 +1,50 @@
+Here is the EXIM verification with signature for SREE PALANI ANDAVAR AGROS PRIVATE LIMITED on the TESTNET network, showing the state transition in the MINA blockchain:
+MINA Blockchain State Transition - EXIM Verification
+Company: SREE PALANI ANDAVAR AGROS PRIVATE LIMITED
+Network: TESTNET
+Zero-Knowledge Proof Details
+Public Input: [0]
+Public Output (Decoded Company Information):
+
+Company Name: SREE PALANI ANDAVAR AGROS PRIVATE LIMITED (ASCII encoded in array)
+IEC Number: U01112TZ2022PTC039493 (ASCII encoded in array)
+
+Proof State:
+
+Max Proofs Verified: 0
+ZK Proof: Generated and encoded (base64 format provided)
+
+Blockchain State Transition Components
+1. Proof Statement Structure:
+
+Deferred Values: Contains cryptographic commitments for plonk protocol
+Feature Flags: Includes range checks, foreign field operations, and other verification features
+Bulletproof Challenges: Multiple pre-challenges for proof verification
+
+2. Cryptographic Commitments:
+
+W-commitments: Multiple elliptic curve points for witness polynomial commitments
+Z-commitment: Commitment for permutation argument
+T-commitments: Commitments for quotient polynomial
+
+3. Evaluation Points:
+
+Contains field element evaluations at specific points
+Includes coefficients and selector evaluations
+Poseidon, generic, and multiplication selector values
+
+4. Proof Verification Data:
+
+LR pairs: Left-right commitments for bulletproof verification
+Delta values: Verification deltas for the proof system
+Challenge polynomial commitment: Final commitment for verification
+
+State Transition Summary
+The verification process creates a zero-knowledge proof that:
+
+Validates the EXIM compliance data for the company
+Proves the authenticity without revealing sensitive details
+Records the verification on MINA blockchain via cryptographic commitment
+Maintains privacy while ensuring regulatory compliance
+
+The proof demonstrates that SREE PALANI ANDAVAR AGROS PRIVATE LIMITED has valid EXIM credentials (IEC: U01112TZ2022PTC039493) without exposing the underlying verification process details, enabling privacy-preserving compliance verification on the blockchain.

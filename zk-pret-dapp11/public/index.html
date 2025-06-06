@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZK-PRET-WEB-APP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Async mode toggle styling */
+        .mode-toggle {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .mode-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e7eb;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input:checked + .slider {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Job queue styling */
+        .job-item {
+            transition: all 0.3s ease;
+            border-radius: 0.5rem;
+        }
+        .job-item.completed {
+            opacity: 0.7;
+        }
+        .pulse-dot {
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 20% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            80%, 100% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* Results container scrolling */
+        .results-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .results-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .results-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        .results-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .results-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">ZK-PRET-WEB-APP</h1>
+                        <p class="text-sm text-gray-500">Zero-Knowledge Proofs for Regulatory Technology</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <!-- Execution Mode Toggle -->
+                    <div class="flex items-center space-x-3">
+                        <span class="text-sm font-medium text-gray-600">Sync</span>
+                        <label class="mode-toggle">
+                            <input type="checkbox" id="async-mode-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="text-sm font-medium text-gray-600">Async</span>
+                    </div>
+                    
+                    <!-- Job Queue Indicator -->
+                    <div id="job-queue-indicator" class="hidden flex items-center space-x-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full pulse-dot"></div>
+                        <span class="text-sm font-medium text-blue-700">
+                            <span id="running-jobs-count">0</span> jobs running
+                        </span>
+                    </div>
+                    
+                    <!-- Connection Status -->
+                    <div id="connection-status" class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-gray-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm text-gray-600">Connecting...</span>
+                    </div>
+                    
+                    <button id="settings-btn" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-cog text-gray-600"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div id="notifications" class="fixed top-4 right-4 z-50"></div>
+        
+        <div class="mb-8">
+            <nav class="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
+                <button class="tab-btn active flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="gleif">
+                    <i class="fas fa-building mr-2"></i>GLEIF Verification
+                </button>
+                <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="corporate">
+                    <i class="fas fa-certificate mr-2"></i>Corporate Registration
+                </button>
+                <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="exim">
+                    <i class="fas fa-ship mr-2"></i>EXIM Verification
+                </button>
+                <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="compliance">
+                    <i class="fas fa-check-circle mr-2"></i>Business Compliance
+                </button>
+                <button class="tab-btn flex-1 px-6 py-3 text-sm font-medium rounded-md" data-tab="risk">
+                    <i class="fas fa-chart-line mr-2"></i>Risk & Liquidity
+                </button>
+            </nav>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-sm border">
+                    <div id="gleif-tab" class="tab-content active p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-building mr-2 text-blue-600"></i>
+                            GLEIF Entity Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Company Name</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    Enter the legal name of the company for GLEIF verification
+                                </div>
+                                <input type="text" id="company-name-input" class="form-input" placeholder="Enter company name">
+                            </div>
+                            
+                            <button id="gleif-execute-btn" class="btn btn-primary w-full">
+                                <i class="fas fa-play mr-2"></i>
+                                Generate GLEIF ZK Proof
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="corporate-tab" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-certificate mr-2 text-green-600"></i>
+                            Corporate Registration Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Corporate Identification Number (CIN)</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    The unique corporate identifier assigned by the registrar
+                                </div>
+                                <input type="text" id="cin-input" class="form-input" placeholder="Enter CIN (e.g., U01112TZ2022PTC039493)">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Company Name</strong> (Optional)
+                                </label>
+                                <input type="text" id="corp-company-name-input" class="form-input" placeholder="Enter company name for verification">
+                            </div>
+                            
+                            <button id="corporate-execute-btn" class="btn btn-primary w-full">
+                                <i class="fas fa-play mr-2"></i>
+                                Generate Corporate Registration ZK Proof
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="exim-tab" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-ship mr-2 text-blue-600"></i>
+                            Export/Import (EXIM) Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Company Name</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    The legal name of the company for EXIM verification
+                                </div>
+                                <input type="text" id="exim-company-name-input" class="form-input" placeholder="Enter company name">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Import Export Code (IEC)</strong> (Optional)
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    The unique code issued by DGFT for import/export activities
+                                </div>
+                                <input type="text" id="iec-input" class="form-input" placeholder="Enter IEC code">
+                            </div>
+                            
+                            <button id="exim-execute-btn" class="btn btn-primary w-full">
+                                <i class="fas fa-play mr-2"></i>
+                                Generate EXIM ZK Proof
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="compliance-tab" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4">Business Compliance Verification</h3>
+                        <p class="text-gray-600">Compliance verification tools will be available here.</p>
+                    </div>
+
+                    <div id="risk-tab" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4">Risk & Liquidity Assessment</h3>
+                        <p class="text-gray-600">Risk assessment tools will be available here.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Server Status -->
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-server mr-2 text-green-600"></i>
+                        Server Status
+                    </h3>
+                    <div id="server-status">Loading...</div>
+                </div>
+
+                <!-- Job Queue (shown in async mode) -->
+                <div id="job-queue-panel" class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center justify-between">
+                        <span>
+                            <i class="fas fa-tasks mr-2 text-blue-600"></i>
+                            Job Queue
+                        </span>
+                        <button id="clear-completed-jobs" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors">
+                            Clear completed
+                        </button>
+                    </h3>
+                    <div id="job-queue-list" class="space-y-2">
+                        <div class="text-center py-6 text-gray-500">
+                            <i class="fas fa-clock text-2xl mb-2 opacity-50"></i>
+                            <p class="text-sm">No jobs in queue</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution Results -->
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-clipboard-list mr-2 text-purple-600"></i>
+                        Execution Results
+                    </h3>
+                    <div id="execution-results" class="results-container">
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-play-circle text-4xl mb-4 opacity-50"></i>
+                            <p>No executions yet</p>
+                            <p class="text-sm">Select a verification tool and click execute</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent History -->
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-history mr-2 text-orange-600"></i>
+                        Recent History
+                    </h3>
+                    <div id="execution-history">
+                        <div class="text-center py-4 text-gray-500">
+                            <p class="text-sm">No history available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        class ZKPretAsyncApp {
+            constructor() {
+                this.currentTab = 'gleif';
+                this.isAsyncMode = true;
+                this.jobs = new Map();
+                this.websocket = null;
+                this.syncExecuting = false;
+                this.init();
+            }
+
+            async init() {
+                this.setupEventListeners();
+                this.initWebSocket();
+                await this.checkConnection();
+                this.updateModeDisplay();
+            }
+
+            setupEventListeners() {
+                // Tab navigation (always allowed in async mode)
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const tabName = e.target.dataset.tab || e.target.closest('.tab-btn').dataset.tab;
+                        this.switchTab(tabName);
+                    });
+                });
+
+                // Mode toggle
+                document.getElementById('async-mode-toggle').addEventListener('change', (e) => {
+                    this.isAsyncMode = e.target.checked;
+                    this.updateModeDisplay();
+                    this.showNotification(
+                        this.isAsyncMode ? 'Async Mode Enabled' : 'Sync Mode Enabled',
+                        this.isAsyncMode ? 'Jobs will run in background' : 'Jobs will block UI until complete',
+                        'info'
+                    );
+                });
+
+                // GLEIF execution
+                document.getElementById('gleif-execute-btn').addEventListener('click', () => {
+                    this.executeGLEIF();
+                });
+                
+                // Corporate Registration execution
+                document.getElementById('corporate-execute-btn').addEventListener('click', () => {
+                    this.executeCorporateRegistration();
+                });
+                
+                // EXIM execution
+                document.getElementById('exim-execute-btn').addEventListener('click', () => {
+                    this.executeEXIM();
+                });
+
+                // Clear completed jobs
+                document.getElementById('clear-completed-jobs').addEventListener('click', () => {
+                    this.clearCompletedJobs();
+                });
+            }
+
+            switchTab(tabName) {
+                // In sync mode, prevent tab switching during execution
+                if (!this.isAsyncMode && this.syncExecuting) {
+                    this.showNotification(
+                        'Execution in Progress',
+                        'Please wait for current execution to complete or switch to Async mode',
+                        'warning'
+                    );
+                    return;
+                }
+
+                // Update buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+                // Update content
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+
+                this.currentTab = tabName;
+            }
+
+            updateModeDisplay() {
+                const jobQueuePanel = document.getElementById('job-queue-panel');
+                const jobQueueIndicator = document.getElementById('job-queue-indicator');
+                
+                if (this.isAsyncMode) {
+                    jobQueuePanel.style.display = 'block';
+                    if (this.jobs.size > 0) {
+                        jobQueueIndicator.classList.remove('hidden');
+                    }
+                } else {
+                    jobQueuePanel.style.display = 'none';
+                    jobQueueIndicator.classList.add('hidden');
+                }
+            }
+
+            async executeGLEIF() {
+                const companyName = document.getElementById('company-name-input').value.trim();
+
+                if (!companyName) {
+                    this.showNotification('Missing Information', 'Please enter the Company Name', 'error');
+                    return;
+                }
+
+                // Use the same parameter format that worked before
+                const parameters = { 
+                    companyName: companyName,
+                    typeOfNet: 'TESTNET'
+                };
+
+                if (this.isAsyncMode) {
+                    await this.executeAsync('get-GLEIF-verification-with-sign', parameters);
+                } else {
+                    await this.executeSync('get-GLEIF-verification-with-sign', parameters);
+                }
+            }
+            
+            async executeCorporateRegistration() {
+                const cin = document.getElementById('cin-input').value.trim();
+                const companyName = document.getElementById('corp-company-name-input').value.trim();
+
+                if (!cin) {
+                    this.showNotification('Missing Information', 'Please enter the Corporate Identification Number (CIN)', 'error');
+                    return;
+                }
+
+                // Use the same parameter format as the working data files
+                const parameters = { 
+                    cin: cin,
+                    typeOfNet: 'TESTNET'
+                };
+
+                if (this.isAsyncMode) {
+                    await this.executeAsync('get-Corporate-Registration-verification-with-sign', parameters);
+                } else {
+                    await this.executeSync('get-Corporate-Registration-verification-with-sign', parameters);
+                }
+            }
+            
+            async executeEXIM() {
+                const companyName = document.getElementById('exim-company-name-input').value.trim();
+                const iec = document.getElementById('iec-input').value.trim();
+
+                if (!companyName) {
+                    this.showNotification('Missing Information', 'Please enter the Company Name for EXIM verification', 'error');
+                    return;
+                }
+
+                // Use the same parameter format as the working data files
+                const parameters = { 
+                    companyName: companyName,
+                    typeOfNet: 'TESTNET'
+                };
+
+                if (this.isAsyncMode) {
+                    await this.executeAsync('get-EXIM-verification-with-sign', parameters);
+                } else {
+                    await this.executeSync('get-EXIM-verification-with-sign', parameters);
+                }
+            }
+
+            async executeAsync(toolName, parameters) {
+                const jobId = this.generateJobId();
+                const job = {
+                    id: jobId,
+                    toolName,
+                    parameters,
+                    status: 'pending',
+                    startTime: new Date(),
+                    result: null
+                };
+
+                this.jobs.set(jobId, job);
+                this.updateJobQueue();
+                this.updateJobQueueIndicator();
+                
+                // Show initial pending state in results
+                document.getElementById('execution-results').innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-clock text-2xl mb-4 text-blue-600"></i>
+                        <p>Job Started</p>
+                        <p class="text-sm text-gray-600 mt-2">Running in background - you can switch tabs freely</p>
+                    </div>
+                `;
+
+                try {
+                    // Start async job via API
+                    const response = await fetch('/api/v1/jobs/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ jobId, toolName, parameters })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to start job');
+                    }
+
+                    job.status = 'running';
+                    this.updateJobQueue();
+
+                    this.showNotification(
+                        'Job Started',
+                        `${toolName.replace('get-', '').replace('-with-sign', '')} is now running in background`,
+                        'info'
+                    );
+
+                } catch (error) {
+                    job.status = 'failed';
+                    job.error = error.message;
+                    this.updateJobQueue();
+                    this.showNotification('Job Failed', error.message, 'error');
+                }
+            }
+
+            async executeSync(toolName, parameters) {
+                this.syncExecuting = true;
+                const resultsContainer = document.getElementById('execution-results');
+                
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-4 text-blue-600"></i>
+                        <p>Generating ZK Proof...</p>
+                        <p class="text-sm text-gray-600 mt-2">This may take a few moments</p>
+                        <div class="mt-4">
+                            <div class="text-xs text-yellow-600 bg-yellow-50 p-2 rounded">
+                                ⚠️ Sync mode - UI is blocked. Switch to Async for better experience.
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                try {
+                    const response = await fetch('/api/v1/tools/execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ toolName, parameters })
+                    });
+
+                    const result = await response.json();
+                    this.displayResult(result);
+
+                } catch (error) {
+                    this.displayError(error.message);
+                } finally {
+                    this.syncExecuting = false;
+                }
+            }
+
+            initWebSocket() {
+                if (!this.isAsyncMode) return;
+
+                try {
+                    this.websocket = new WebSocket(`ws://localhost:3000`);
+                    
+                    this.websocket.onopen = () => {
+                        console.log('WebSocket connected');
+                    };
+
+                    this.websocket.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'job_update') {
+                            this.handleJobUpdate(data);
+                        }
+                    };
+
+                    this.websocket.onclose = () => {
+                        console.log('WebSocket disconnected');
+                        setTimeout(() => this.initWebSocket(), 5000);
+                    };
+
+                } catch (error) {
+                    console.error('WebSocket connection failed:', error);
+                }
+            }
+
+            handleJobUpdate(data) {
+                const job = this.jobs.get(data.jobId);
+                if (!job) return;
+
+                job.status = data.status;
+                job.progress = data.progress;
+                job.result = data.result;
+                job.error = data.error;
+
+                if (data.status === 'completed' || data.status === 'failed') {
+                    job.endTime = new Date();
+                    
+                    // Display the result in the execution results panel
+                    if (data.status === 'completed' && data.result) {
+                        this.displayResult(data.result);
+                    } else if (data.status === 'failed') {
+                        this.displayError(data.error || 'Job execution failed');
+                    }
+                    
+                    this.showNotification(
+                        data.status === 'completed' ? 'Job Completed' : 'Job Failed',
+                        `${job.toolName.replace('get-', '').replace('-with-sign', '')} ${data.status === 'completed' ? 'completed successfully' : 'failed'}`,
+                        data.status === 'completed' ? 'success' : 'error'
+                    );
+                }
+
+                this.updateJobQueue();
+                this.updateJobQueueIndicator();
+            }
+
+            updateJobQueue() {
+                const container = document.getElementById('job-queue-list');
+                const jobs = Array.from(this.jobs.values()).reverse();
+
+                if (jobs.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-6 text-gray-500">
+                            <i class="fas fa-clock text-2xl mb-2 opacity-50"></i>
+                            <p class="text-sm">No jobs in queue</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = jobs.map(job => `
+                    <div class="job-item ${job.status === 'completed' || job.status === 'failed' ? 'completed' : ''} border-l-4 ${this.getJobBorderColor(job.status)} bg-gray-50 p-3 rounded-r transition-all">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium text-sm text-gray-900">${job.toolName.replace('get-', '').replace('-with-sign', '')}</div>
+                                <div class="text-xs text-gray-500">${job.startTime.toLocaleTimeString()}</div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                ${this.getJobStatusIcon(job.status)}
+                                <span class="text-xs font-medium ${this.getJobStatusColor(job.status)} capitalize">${job.status}</span>
+                            </div>
+                        </div>
+                        ${job.progress ? `<div class="mt-2"><div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full transition-all duration-500" style="width: ${job.progress}%"></div></div></div>` : ''}
+                    </div>
+                `).join('');
+            }
+
+            updateJobQueueIndicator() {
+                const runningJobs = Array.from(this.jobs.values()).filter(job => 
+                    job.status === 'running' || job.status === 'pending'
+                ).length;
+                
+                document.getElementById('running-jobs-count').textContent = runningJobs;
+                
+                if (runningJobs > 0 && this.isAsyncMode) {
+                    document.getElementById('job-queue-indicator').classList.remove('hidden');
+                } else {
+                    document.getElementById('job-queue-indicator').classList.add('hidden');
+                }
+            }
+
+            clearCompletedJobs() {
+                for (const [jobId, job] of this.jobs.entries()) {
+                    if (job.status === 'completed' || job.status === 'failed') {
+                        this.jobs.delete(jobId);
+                    }
+                }
+                this.updateJobQueue();
+                this.updateJobQueueIndicator();
+            }
+
+            getJobBorderColor(status) {
+                switch (status) {
+                    case 'pending': return 'border-yellow-400';
+                    case 'running': return 'border-blue-400';
+                    case 'completed': return 'border-green-400';
+                    case 'failed': return 'border-red-400';
+                    default: return 'border-gray-400';
+                }
+            }
+
+            getJobStatusIcon(status) {
+                switch (status) {
+                    case 'pending': return '<i class="fas fa-clock text-yellow-500"></i>';
+                    case 'running': return '<i class="fas fa-spinner fa-spin text-blue-500"></i>';
+                    case 'completed': return '<i class="fas fa-check-circle text-green-500"></i>';
+                    case 'failed': return '<i class="fas fa-exclamation-circle text-red-500"></i>';
+                    default: return '<i class="fas fa-question-circle text-gray-500"></i>';
+                }
+            }
+
+            getJobStatusColor(status) {
+                switch (status) {
+                    case 'pending': return 'text-yellow-600';
+                    case 'running': return 'text-blue-600';
+                    case 'completed': return 'text-green-600';
+                    case 'failed': return 'text-red-600';
+                    default: return 'text-gray-600';
+                }
+            }
+
+            generateJobId() {
+                return 'job_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            displayResult(result) {
+                const container = document.getElementById('execution-results');
+                
+                if (result.success) {
+                    container.innerHTML = `
+                        <div class="result-card success">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                <span class="font-semibold">Success</span>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div><strong>Tool:</strong> ${result.toolName || 'ZK Proof Generation'}</div>
+                                <div><strong>ZK Proof:</strong> Generated</div>
+                                <div><strong>Time:</strong> ${result.executionTime || 'N/A'}</div>
+                                ${result.result?.output ? `<div class="mt-3"><strong>Output:</strong><div class="code-output mt-1">${result.result.output.substring(0, 500)}${result.result.output.length > 500 ? '...' : ''}</div></div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    this.displayError(result.error || 'Unknown error');
+                }
+            }
+
+            displayError(message) {
+                const container = document.getElementById('execution-results');
+                container.innerHTML = `
+                    <div class="result-card error">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>
+                            <span class="font-semibold">Failed</span>
+                        </div>
+                        <div class="text-sm">
+                            <div><strong>Error:</strong> ${message}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async checkConnection() {
+                try {
+                    const response = await fetch('/api/v1/health');
+                    const health = await response.json();
+                    this.updateConnectionStatus(health.status === 'healthy');
+                    this.updateServerStatus(health);
+                } catch (error) {
+                    this.updateConnectionStatus(false);
+                }
+            }
+
+            updateConnectionStatus(connected) {
+                const status = document.getElementById('connection-status');
+                status.innerHTML = `
+                    <div class="w-3 h-3 ${connected ? 'bg-green-400' : 'bg-red-400'} rounded-full"></div>
+                    <span class="text-sm text-gray-600">${connected ? 'Connected' : 'Disconnected'}</span>
+                `;
+            }
+
+            updateServerStatus(status) {
+                const container = document.getElementById('server-status');
+                container.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium">Status</span>
+                            <span class="status-indicator status-${status.status === 'healthy' ? 'connected' : 'degraded'}">${status.status || 'unknown'}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium">ZK-PRET Server</span>
+                            <span class="text-sm ${status.services?.zkPretServer ? 'text-green-600' : 'text-red-600'}">
+                                <i class="fas fa-${status.services?.zkPretServer ? 'check' : 'times'} mr-1"></i>
+                                ${status.services?.zkPretServer ? 'Online' : 'Offline'}
+                            </span>
+                        </div>
+                        ${status.services?.asyncJobs !== undefined ? `
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium">Async Jobs</span>
+                                <span class="text-sm ${status.services?.asyncJobs ? 'text-green-600' : 'text-gray-600'}">
+                                    <i class="fas fa-${status.services?.asyncJobs ? 'check' : 'times'} mr-1"></i>
+                                    ${status.services?.asyncJobs ? 'Enabled' : 'Disabled'}
+                                </span>
+                            </div>
+                        ` : ''}
+                        <div class="text-xs text-gray-500">
+                            Last updated: ${new Date(status.timestamp).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            }
+
+            showNotification(title, message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold">${title}</h4>
+                            <p class="text-sm mt-1">${message}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+
+                document.getElementById('notifications').appendChild(notification);
+                setTimeout(() => notification.remove(), 5000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new ZKPretAsyncApp();
+        });
+    </script>
+</body>
+</html>

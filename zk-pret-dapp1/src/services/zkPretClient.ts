@@ -214,10 +214,10 @@ class ZKPretClient {
     console.log('Script File:', scriptFile);
     console.log('============================');
     
-    return await this.executePreCompiledScript(scriptFile, parameters);
+    return await this.executePreCompiledScript(scriptFile, parameters, toolName);
   }
 
-  async executePreCompiledScript(scriptFile: string, parameters: any = {}): Promise<any> {
+  async executePreCompiledScript(scriptFile: string, parameters: any = {}, toolName?: string): Promise<any> {
     const compiledScriptPath = path.join(this.config.stdioPath!, this.config.stdioBuildPath!, scriptFile);
     
     console.log('🔍 Checking for pre-compiled JavaScript file...');
@@ -240,7 +240,7 @@ class ZKPretClient {
     console.log('✅ Pre-compiled JavaScript file found');
     console.log('🚀 Executing compiled JavaScript file...');
     
-    return await this.executeJavaScriptFile(compiledScriptPath, parameters);
+    return await this.executeJavaScriptFile(compiledScriptPath, parameters, toolName);
   }
 
   async buildProject(): Promise<boolean> {
@@ -288,9 +288,9 @@ class ZKPretClient {
     });
   }
 
-  async executeJavaScriptFile(scriptPath: string, parameters: any = {}): Promise<any> {
+  async executeJavaScriptFile(scriptPath: string, parameters: any = {}, toolName?: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      const args = this.prepareScriptArgs(parameters);
+      const args = this.prepareScriptArgs(parameters, toolName);
       
       console.log('=== JAVASCRIPT EXECUTION DEBUG ===');
       console.log('Script Path:', scriptPath);
@@ -377,27 +377,66 @@ class ZKPretClient {
     });
   }
 
-  prepareScriptArgs(parameters: any): string[] {
+  prepareScriptArgs(parameters: any, toolName?: string): string[] {
     console.log('=== PREPARING SCRIPT ARGS ===');
+    console.log('Tool Name:', toolName);
     console.log('Input parameters:', parameters);
     
-    // For GLEIF verification, the script expects positional arguments:
-    // 1. Company name (from legalName parameter)
-    // 2. Network type (always "TESTNET")
     const args: string[] = [];
     
-    // Extract company name from legalName parameter
-    const companyName = parameters.legalName || parameters.entityName || parameters.companyName;
-    if (companyName) {
-      args.push(String(companyName));
-      console.log(`Added positional arg 1 (company name): "${companyName}"`);
-    } else {
-      console.log('⚠️  No company name found in parameters');
+    // Handle different verification types with their specific parameter requirements
+    switch (toolName) {
+      case 'get-GLEIF-verification-with-sign':
+        // GLEIF verification expects: [companyName, TESTNET]
+        // Try multiple parameter names for backward compatibility
+        const companyName = parameters.companyName || parameters.legalName || parameters.entityName;
+        if (companyName) {
+          args.push(String(companyName));
+          console.log(`Added GLEIF arg 1 (company name): "${companyName}"`);
+        } else {
+          console.log('⚠️  No company name found for GLEIF verification');
+        }
+        args.push('TESTNET');
+        console.log('Added GLEIF arg 2 (network type): "TESTNET"');
+        break;
+        
+      case 'get-Corporate-Registration-verification-with-sign':
+        // Corporate Registration verification expects: [cin, TESTNET]
+        const cin = parameters.cin;
+        if (cin) {
+          args.push(String(cin));
+          console.log(`Added Corporate Registration arg 1 (CIN): "${cin}"`);
+        } else {
+          console.log('⚠️  No CIN found for Corporate Registration verification');
+        }
+        args.push('TESTNET');
+        console.log('Added Corporate Registration arg 2 (network type): "TESTNET"');
+        break;
+        
+      case 'get-EXIM-verification-with-sign':
+        // EXIM verification expects: [companyName, TESTNET]
+        const eximCompanyName = parameters.companyName || parameters.legalName || parameters.entityName;
+        if (eximCompanyName) {
+          args.push(String(eximCompanyName));
+          console.log(`Added EXIM arg 1 (company name): "${eximCompanyName}"`);
+        } else {
+          console.log('⚠️  No company name found for EXIM verification');
+        }
+        args.push('TESTNET');
+        console.log('Added EXIM arg 2 (network type): "TESTNET"');
+        break;
+        
+      default:
+        // For other verification types, use the original logic as fallback
+        const fallbackCompanyName = parameters.legalName || parameters.entityName || parameters.companyName;
+        if (fallbackCompanyName) {
+          args.push(String(fallbackCompanyName));
+          console.log(`Added fallback arg 1 (company name): "${fallbackCompanyName}"`);
+        }
+        args.push('TESTNET');
+        console.log('Added fallback arg 2 (network type): "TESTNET"');
+        break;
     }
-    
-    // Always add TESTNET as the network type
-    args.push('TESTNET');
-    console.log('Added positional arg 2 (network type): "TESTNET"');
     
     console.log('Final args array:', args);
     console.log('Command will be: node script.js', args.map(arg => `"${arg}"`).join(' '));

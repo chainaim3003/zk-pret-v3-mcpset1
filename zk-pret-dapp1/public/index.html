@@ -168,35 +168,12 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <strong>Legal Entity Identifier (LEI)</strong>
+                                    <strong>Company Name</strong>
                                 </label>
                                 <div class="text-sm text-gray-600 mb-2">
-                                    The unique 20-character alphanumeric code assigned to the legal entity
+                                    Enter the legal name of the company for GLEIF verification
                                 </div>
-                                <input type="text" id="lei-input" class="form-input" placeholder="Enter LEI code (e.g., 5493000NWYC6QR4C0G12)">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <strong>Legal Entity Name</strong>
-                                </label>
-                                <input type="text" id="entity-name-input" class="form-input" placeholder="Enter legal entity name">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <strong>Jurisdiction</strong>
-                                </label>
-                                <div class="text-sm text-gray-600 mb-2">Select jurisdiction (optional)</div>
-                                <select id="jurisdiction-select" class="form-select">
-                                    <option value="">Select jurisdiction...</option>
-                                    <option value="US">United States</option>
-                                    <option value="GB">United Kingdom</option>
-                                    <option value="DE">Germany</option>
-                                    <option value="FR">France</option>
-                                    <option value="JP">Japan</option>
-                                    <option value="CA">Canada</option>
-                                </select>
+                                <input type="text" id="company-name-input" class="form-input" placeholder="Enter company name">
                             </div>
                             
                             <button id="gleif-execute-btn" class="btn btn-primary w-full">
@@ -207,13 +184,66 @@
                     </div>
                     
                     <div id="corporate-tab" class="tab-content hidden p-6">
-                        <h3 class="text-lg font-semibold mb-4">Corporate Registration Verification</h3>
-                        <p class="text-gray-600">Corporate registration verification tools will be available here.</p>
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-certificate mr-2 text-green-600"></i>
+                            Corporate Registration Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Corporate Identification Number (CIN)</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    The unique corporate identifier assigned by the registrar
+                                </div>
+                                <input type="text" id="cin-input" class="form-input" placeholder="Enter CIN (e.g., U01112TZ2022PTC039493)">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Company Name</strong> (Optional)
+                                </label>
+                                <input type="text" id="corp-company-name-input" class="form-input" placeholder="Enter company name for verification">
+                            </div>
+                            
+                            <button id="corporate-execute-btn" class="btn btn-primary w-full">
+                                <i class="fas fa-play mr-2"></i>
+                                Generate Corporate Registration ZK Proof
+                            </button>
+                        </div>
                     </div>
 
                     <div id="exim-tab" class="tab-content hidden p-6">
-                        <h3 class="text-lg font-semibold mb-4">Export/Import Verification</h3>
-                        <p class="text-gray-600">EXIM verification tools will be available here.</p>
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-ship mr-2 text-blue-600"></i>
+                            Export/Import (EXIM) Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Company Name</strong>
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    The legal name of the company for EXIM verification
+                                </div>
+                                <input type="text" id="exim-company-name-input" class="form-input" placeholder="Enter company name">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <strong>Import Export Code (IEC)</strong> (Optional)
+                                </label>
+                                <div class="text-sm text-gray-600 mb-2">
+                                    The unique code issued by DGFT for import/export activities
+                                </div>
+                                <input type="text" id="iec-input" class="form-input" placeholder="Enter IEC code">
+                            </div>
+                            
+                            <button id="exim-execute-btn" class="btn btn-primary w-full">
+                                <i class="fas fa-play mr-2"></i>
+                                Generate EXIM ZK Proof
+                            </button>
+                        </div>
                     </div>
 
                     <div id="compliance-tab" class="tab-content hidden p-6">
@@ -330,6 +360,16 @@
                 document.getElementById('gleif-execute-btn').addEventListener('click', () => {
                     this.executeGLEIF();
                 });
+                
+                // Corporate Registration execution
+                document.getElementById('corporate-execute-btn').addEventListener('click', () => {
+                    this.executeCorporateRegistration();
+                });
+                
+                // EXIM execution
+                document.getElementById('exim-execute-btn').addEventListener('click', () => {
+                    this.executeEXIM();
+                });
 
                 // Clear completed jobs
                 document.getElementById('clear-completed-jobs').addEventListener('click', () => {
@@ -375,25 +415,67 @@
             }
 
             async executeGLEIF() {
-                const lei = document.getElementById('lei-input').value.trim();
-                const entityName = document.getElementById('entity-name-input').value.trim();
-                const jurisdiction = document.getElementById('jurisdiction-select').value;
+                const companyName = document.getElementById('company-name-input').value.trim();
 
-                if (!lei && !entityName) {
-                    this.showNotification('Missing Information', 'Please enter either LEI or Entity Name', 'error');
+                if (!companyName) {
+                    this.showNotification('Missing Information', 'Please enter the Company Name', 'error');
                     return;
                 }
 
+                // Use the same parameter format that worked before
                 const parameters = { 
-                    entityId: lei || '',
-                    legalName: entityName || '',
-                    jurisdiction: jurisdiction || ''
+                    companyName: companyName,
+                    typeOfNet: 'TESTNET'
                 };
 
                 if (this.isAsyncMode) {
                     await this.executeAsync('get-GLEIF-verification-with-sign', parameters);
                 } else {
                     await this.executeSync('get-GLEIF-verification-with-sign', parameters);
+                }
+            }
+            
+            async executeCorporateRegistration() {
+                const cin = document.getElementById('cin-input').value.trim();
+                const companyName = document.getElementById('corp-company-name-input').value.trim();
+
+                if (!cin) {
+                    this.showNotification('Missing Information', 'Please enter the Corporate Identification Number (CIN)', 'error');
+                    return;
+                }
+
+                // Use the same parameter format as the working data files
+                const parameters = { 
+                    cin: cin,
+                    typeOfNet: 'TESTNET'
+                };
+
+                if (this.isAsyncMode) {
+                    await this.executeAsync('get-Corporate-Registration-verification-with-sign', parameters);
+                } else {
+                    await this.executeSync('get-Corporate-Registration-verification-with-sign', parameters);
+                }
+            }
+            
+            async executeEXIM() {
+                const companyName = document.getElementById('exim-company-name-input').value.trim();
+                const iec = document.getElementById('iec-input').value.trim();
+
+                if (!companyName) {
+                    this.showNotification('Missing Information', 'Please enter the Company Name for EXIM verification', 'error');
+                    return;
+                }
+
+                // Use the same parameter format as the working data files
+                const parameters = { 
+                    companyName: companyName,
+                    typeOfNet: 'TESTNET'
+                };
+
+                if (this.isAsyncMode) {
+                    await this.executeAsync('get-EXIM-verification-with-sign', parameters);
+                } else {
+                    await this.executeSync('get-EXIM-verification-with-sign', parameters);
                 }
             }
 
